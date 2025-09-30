@@ -14,8 +14,8 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function fetchNewToken(): Promise<CachedToken> {
   console.log("Fetching a new token from Rada API...");
-  const MAX_RETRIES = 3; // Максимальна кількість спроб
-  const RETRY_DELAY_MS = 500; // Пауза між спробами в мілісекундах
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 500;
 
   let lastError: Error | null = null;
 
@@ -55,7 +55,6 @@ async function fetchNewToken(): Promise<CachedToken> {
         );
       }
 
-      // Якщо все успішно, виходимо з циклу і повертаємо токен
       return newCachedToken;
     } catch (error) {
       lastError = error as Error;
@@ -69,10 +68,8 @@ async function fetchNewToken(): Promise<CachedToken> {
     }
   }
 
-  // Якщо всі спроби були невдалими, викидаємо останню помилку
   console.error("All attempts to fetch a new token failed.");
   throw lastError;
-  // === КІНЕЦЬ ЗМІН ===
 }
 
 export async function getValidToken(): Promise<string> {

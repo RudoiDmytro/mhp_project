@@ -1,7 +1,5 @@
-// src/app/page.tsx
 'use client';
 
-// 1. Імпортуємо useEffect з React
 import { useState, FormEvent, useEffect } from 'react';
 import { format, sub } from 'date-fns';
 import { BillCategory } from '@/lib/keywords';
@@ -102,7 +100,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchBills(startDate, endDate);
-  }, []); // Порожній масив означає, що цей ефект виконається лише один раз
+  }, []);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
