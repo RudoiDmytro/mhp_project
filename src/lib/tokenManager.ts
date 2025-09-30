@@ -13,10 +13,10 @@ interface CachedToken {
 async function fetchNewToken(): Promise<CachedToken> {
   console.log("Fetching a new token from Rada API...");
 
-  const ipAddress = process.env.RADA_REGISTERED_IP;
-  if (!ipAddress) {
-    throw new Error("RADA_REGISTERED_IP is not set in environment variables.");
-  }
+  // const ipAddress = process.env.RADA_REGISTERED_IP;
+  // if (!ipAddress) {
+  //   throw new Error("RADA_REGISTERED_IP is not set in environment variables.");
+  // }
   const headers = {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
