@@ -10,41 +10,69 @@ interface CachedToken {
   expiresAt: number;
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function fetchNewToken(): Promise<CachedToken> {
   console.log("Fetching a new token from Rada API...");
+  const MAX_RETRIES = 3; // Максимальна кількість спроб
+  const RETRY_DELAY_MS = 500; // Пауза між спробами в мілісекундах
 
-  // const ipAddress = process.env.RADA_REGISTERED_IP;
-  // if (!ipAddress) {
-  //   throw new Error("RADA_REGISTERED_IP is not set in environment variables.");
-  // }
-  const headers = {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-  };
+  let lastError: Error | null = null;
 
-  const response = await fetch(`${TOKEN_API_URL}`, { headers });
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`Fetching new token, attempt ${attempt}/${MAX_RETRIES}...`);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Failed to fetch Rada API token: ${response.status} ${errorText}`
-    );
+      const headers = {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+      };
+
+      const response = await fetch(TOKEN_API_URL, { headers });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch Rada API token (Status: ${response.status}): ${errorText}`
+        );
+      }
+
+      const data: { expire: number; token: string } = await response.json();
+      const safetyBuffer = 60 * 1000;
+      const expiresAt = Date.now() + data.expire * 1000 - safetyBuffer;
+      const newCachedToken: CachedToken = { token: data.token, expiresAt };
+
+      const isRedisConfigured =
+        process.env.UPSTASH_REDIS_REST_URL &&
+        process.env.UPSTASH_REDIS_REST_TOKEN;
+
+      if (isRedisConfigured) {
+        await redis.set(CACHE_KEY, newCachedToken);
+        console.log("Successfully fetched and cached a new token.");
+      } else {
+        console.warn(
+          "Redis environment variables are not set. Skipping caching."
+        );
+      }
+
+      // Якщо все успішно, виходимо з циклу і повертаємо токен
+      return newCachedToken;
+    } catch (error) {
+      lastError = error as Error;
+      if (error instanceof Error) {
+        console.warn(`Attempt ${attempt} failed: ${error.message}`);
+      }
+      if (attempt < MAX_RETRIES) {
+        console.log(`Retrying in ${RETRY_DELAY_MS}ms...`);
+        await delay(RETRY_DELAY_MS);
+      }
+    }
   }
 
-  const data: { expire: number; token: string } = await response.json();
-
-  const safetyBuffer = 60 * 1000;
-  const expiresAt = Date.now() + data.expire * 1000 - safetyBuffer;
-
-  const newCachedToken: CachedToken = {
-    token: data.token,
-    expiresAt,
-  };
-
-  await redis.set(CACHE_KEY, newCachedToken);
-  console.log("Successfully fetched and cached a new token.");
-
-  return newCachedToken;
+  // Якщо всі спроби були невдалими, викидаємо останню помилку
+  console.error("All attempts to fetch a new token failed.");
+  throw lastError;
+  // === КІНЕЦЬ ЗМІН ===
 }
 
 export async function getValidToken(): Promise<string> {
