@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { categorizeBill } from "@/lib/keywords";
-import { RadaBill } from "@/lib/types";
 import { sendDigestEmail } from "@/lib/emailService";
-import { getValidToken } from "@/lib/tokenManager";
+import { fetchRadaDataset } from "@/lib/radaApiService";
 
 const redis = Redis.fromEnv();
 
-const RADA_BILLS_URL =
-  "https://data.rada.gov.ua/ogd/zpr/skl9/billinfo-skl9.json";
 const SEEN_BILLS_CACHE_KEY = "rada_seen_bills_ids";
 
 export async function GET(request: Request) {
@@ -20,17 +17,7 @@ export async function GET(request: Request) {
   }
   console.log("Starting daily digest cron job...");
 
-  const token = await getValidToken();
-  const headers = { "User-Agent": token };
-
-  const response = await fetch(RADA_BILLS_URL, { headers });
-  if (!response.ok) {
-    throw new Error(
-      `Не вдалося завантажити дані з API Ради, статус: ${response.status}`
-    );
-  }
-
-  const allBills: RadaBill[] = await response.json();
+  const allBills = await fetchRadaDataset();
 
   const seenBillIds = await redis.smembers(SEEN_BILLS_CACHE_KEY);
   const seenBillIdsSet = new Set(seenBillIds);
