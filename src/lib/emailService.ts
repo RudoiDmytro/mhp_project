@@ -1,14 +1,8 @@
+"use server"
 import nodemailer from 'nodemailer';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { DailyDigestEmail } from '@/emails/DailyDigestEmail';
-
-interface Bill {
-  number: string;
-  title: string;
-  url: string;
-  date: string;
-  categories: string[];
-}
+import { render } from '@react-email/render';
+import { Bill } from './types';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -21,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendDigestEmail(bills: Bill[]) {
-  const emailHtml = renderToStaticMarkup(DailyDigestEmail({ bills }));
+  const emailHtml = await render(DailyDigestEmail({ bills }));
   const reportDate = new Date().toLocaleDateString('uk-UA');
 
   const mailOptions = {
