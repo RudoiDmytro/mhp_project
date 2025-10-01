@@ -24,6 +24,12 @@ export async function GET(request: Request) {
   const headers = { "User-Agent": token };
 
   const response = await fetch(RADA_BILLS_URL, { headers });
+  if (!response.ok) {
+    throw new Error(
+      `Не вдалося завантажити дані з API Ради, статус: ${response.status}`
+    );
+  }
+
   const allBills: RadaBill[] = await response.json();
 
   const seenBillIds = await redis.smembers(SEEN_BILLS_CACHE_KEY);
