@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 import { categorizeBill } from "@/lib/keywords";
 import { RadaBill } from "@/lib/types";
 import { sendDigestEmail } from "@/lib/emailService";
+import { getValidToken } from "@/lib/tokenManager";
 
 const redis = Redis.fromEnv();
 
@@ -19,7 +20,10 @@ export async function GET(request: Request) {
   }
   console.log("Starting daily digest cron job...");
 
-  const response = await fetch(RADA_BILLS_URL);
+  const token = await getValidToken();
+  const headers = { "User-Agent": token };
+
+  const response = await fetch(RADA_BILLS_URL, { headers });
   const allBills: RadaBill[] = await response.json();
 
   const seenBillIds = await redis.smembers(SEEN_BILLS_CACHE_KEY);
