@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
-import { Resend } from "resend";
 import { categorizeBill } from "@/lib/keywords";
 import { RadaBill } from "@/lib/types";
-import DailyDigestEmail from "@/emails/DailyDigestEmail";
+import { sendDigestEmail } from "@/lib/emailService";
 
 const redis = Redis.fromEnv();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const RADA_BILLS_URL =
   "https://data.rada.gov.ua/ogd/zpr/skl9/billinfo-skl9.json";
@@ -51,12 +49,7 @@ export async function GET(request: Request) {
       `Found ${newRelevantBills.length} new relevant bills. Sending email...`
     );
     try {
-      await resend.emails.send({
-        from: "digest@rudoi.mhpproject",
-        to: ["irudoj63@gmail.com"],
-        subject: `Щоденний дайджест законодавства (${new Date().toLocaleDateString("uk-UA")})`,
-        react: DailyDigestEmail({ bills: newRelevantBills }),
-      });
+      await sendDigestEmail(newRelevantBills);
       console.log("Email sent successfully.");
     } catch (error) {
       console.error("Failed to send email:", error);

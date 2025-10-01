@@ -1,5 +1,3 @@
-// emails/DailyDigestEmail.tsx
-
 import React from 'react';
 import {
   Body,
@@ -14,7 +12,6 @@ import {
   Text,
 } from '@react-email/components';
 import { DailyDigestEmailProps } from '@/lib/types';
-
 
 
 const categoryStyles: { [key: string]: React.CSSProperties } = {
@@ -34,6 +31,7 @@ const tagBaseStyle: React.CSSProperties = {
   border: '1px solid',
 };
 
+// --- Основний компонент листа ---
 
 export const DailyDigestEmail = ({ bills }: DailyDigestEmailProps) => {
   const previewText = `Знайдено ${bills.length} нових законопроєктів, що відповідають вашим критеріям.`;
@@ -59,7 +57,7 @@ export const DailyDigestEmail = ({ bills }: DailyDigestEmailProps) => {
                 <Text style={billTitle}>{bill.number}: {bill.title}</Text>
               </Link>
               <Text style={billMeta}>Дата реєстрації: {bill.date}</Text>
-
+              
               <div style={{ marginTop: '12px' }}>
                 {bill.categories.map((category) => (
                   <span key={category} style={{ ...tagBaseStyle, ...(categoryStyles[category] || categoryStyles.default) }}>
