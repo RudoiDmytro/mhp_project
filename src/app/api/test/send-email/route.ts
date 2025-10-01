@@ -1,23 +1,12 @@
-// src/app/api/test/send-email/route.ts
-
 import { NextResponse } from 'next/server';
 import { sendDigestEmail } from '@/lib/emailService';
+import { Bill } from '@/lib/types';
 
-// Тип для законопроєкту, який очікує наша функція
-interface Bill {
-  number: string;
-  title: string;
-  url: string;
-  date: string;
-  categories: string[];
-}
-
-// Створюємо "іграшкові" дані для тестового листа
 const mockBills: Bill[] = [
   {
     number: 'ТЕСТ-001',
     title: 'Тестовий законопроєкт про розвиток аграрного сектору',
-    url: 'https://itd.rada.gov.ua/billInfo/Bills/Card/1', // Просто посилання-заглушка
+    url: 'https://itd.rada.gov.ua/billInfo/Bills/Card/1',
     date: new Date().toISOString().split('T')[0],
     categories: ['Аграрна', 'Корпоративна'],
   },
@@ -30,9 +19,7 @@ const mockBills: Bill[] = [
   },
 ];
 
-
 export async function GET(request: Request) {
-  // 1. Захищаємо роут: перевіряємо секретний ключ
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');
 
@@ -40,7 +27,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // 2. Викликаємо нашу основну функцію відправки з тестовими даними
   try {
     console.log('--- Starting email test ---');
     const success = await sendDigestEmail(mockBills);
