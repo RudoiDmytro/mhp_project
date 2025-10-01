@@ -10,6 +10,14 @@ const redis = Redis.fromEnv();
 const SEEN_BILLS_CACHE_KEY = "rada_seen_bills_ids";
 
 export async function GET(request: Request) {
+  // Захист роута
+  const authToken = (request.headers.get("authorization") || "").split(
+    "Bearer "
+  )[1];
+  if (authToken !== process.env.CRON_SECRET) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   try {
     console.log("Starting daily digest cron job...");
 
