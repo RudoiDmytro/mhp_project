@@ -1,27 +1,11 @@
 import { NextResponse } from "next/server";
 import { parseISO, isWithinInterval } from "date-fns";
 import { Redis } from "@upstash/redis";
-import { categorizeBill, BillCategory } from "@/lib/keywords";
+import { categorizeBill } from "@/lib/keywords";
 import { getValidToken } from "@/lib/tokenManager";
+import type { RadaBill, AnalyzedBill } from "@/lib/types";
 
-interface RadaBill {
-  id: number;
-  name: string;
-  url: string;
-  registrationNumber: string;
-  registrationDate: string;
-  bind: number[];
-  alternative: number[];
-}
-interface AnalyzedBill {
-  number: string;
-  title: string;
-  registration_date: string;
-  url: string;
-  categories: BillCategory[];
-  binds: number[];
-  alternatives: number[];
-}
+
 
 const redis = Redis.fromEnv();
 const CACHE_KEY_PREFIX = "rada_result";

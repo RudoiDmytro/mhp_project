@@ -2,18 +2,9 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { format, sub } from 'date-fns';
-import { BillCategory } from '@/lib/keywords';
 import Link from 'next/link';
+import type { AnalyzedBill, BillCategory } from '@/lib/types';
 
-interface AnalyzedBill {
-  number: string;
-  title: string;
-  registration_date: string;
-  url: string;
-  categories: BillCategory[];
-  binds: number[];
-  alternatives: number[];
-}
 const BillCard = ({ bill }: { bill: AnalyzedBill}) => {
 
   const categoryColors: Record<BillCategory, string> = {
@@ -110,9 +101,9 @@ export default function HomePage() {
   return (
     <main className="container mx-auto p-4 md:p-8 font-sans">
       <header className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">Аналізатор Законодавства</h1>
+        <h1 className="text-4xl font-bold text-gray-800">Законодавчий Моніторинг</h1>
         <p className="text-lg text-gray-600 mt-2">
-          MVP для автоматичного моніторингу законопроєктів для агрохолдингу.
+          MVP для моніторингу законопроєктів.
         </p>
       </header>
 

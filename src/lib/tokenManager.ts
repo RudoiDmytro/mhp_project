@@ -1,14 +1,10 @@
 import { Redis } from "@upstash/redis";
+import type { CachedToken } from "./types";
 
 const CACHE_KEY = "rada_api_token_cache";
 const TOKEN_API_URL = "https://data.rada.gov.ua/api/token";
 
 const redis = Redis.fromEnv();
-
-interface CachedToken {
-  token: string;
-  expiresAt: number;
-}
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
