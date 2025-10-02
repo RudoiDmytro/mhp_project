@@ -2,36 +2,14 @@ import { NextResponse } from "next/server";
 import { parseISO, isWithinInterval } from "date-fns";
 import { Redis } from "@upstash/redis";
 import { categorizeBill } from "@/lib/keywords";
-import { getValidToken } from "@/lib/tokenManager";
-import type { RadaBill, AnalyzedBill } from "@/lib/types";
+import type { AnalyzedBill } from "@/lib/types";
+import { fetchRadaDataset } from "@/lib/radaApiService";
 
 
 
 const redis = Redis.fromEnv();
 const CACHE_KEY_PREFIX = "rada_result";
 const CACHE_EXPIRATION_SECONDS = 3600;
-
-const RADA_BILLS_URL =
-  "https://data.rada.gov.ua/ogd/zpr/skl9/billinfo-skl9.json";
-
-async function fetchAndProcessFullDataset(): Promise<RadaBill[]> {
-  console.log("Fetching full dataset from Rada API...");
-  const token = await getValidToken();
-  const headers = { "User-Agent": token };
-
-  const response = await fetch(RADA_BILLS_URL, { headers });
-
-  if (!response.ok) {
-    throw new Error(
-      `Не вдалося завантажити дані з API Ради, статус: ${response.status}`
-    );
-  }
-
-  const rawText = await response.text();
-  const cleanedText = rawText.replace(/[\x00-\x1F]/g, " ");
-
-  return JSON.parse(cleanedText) as RadaBill[];
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -56,7 +34,7 @@ export async function GET(request: Request) {
 
     console.log(`Cache miss for key: ${cacheKey}. Processing data...`);
 
-    const allBills = await fetchAndProcessFullDataset();
+    const allBills = await fetchRadaDataset();
 
     const searchInterval = {
       start: parseISO(startDateStr),

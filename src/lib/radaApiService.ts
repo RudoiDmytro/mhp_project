@@ -38,7 +38,7 @@ export async function fetchRadaDataset(): Promise<RadaBill[]> {
       console.log(
         `[Rada Service] Dataset fetched successfully, ${allBills.length} bills found.`
       );
-      // Якщо все успішно, повертаємо результат і виходимо з циклу
+
       return allBills;
     } catch (error) {
       lastError = error as Error;
@@ -52,7 +52,6 @@ export async function fetchRadaDataset(): Promise<RadaBill[]> {
     }
   }
 
-  // Якщо всі спроби були невдалими, викидаємо останню помилку
   console.error("[Rada Service] All attempts to fetch the dataset failed.");
   throw lastError;
 }
