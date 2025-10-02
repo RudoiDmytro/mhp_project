@@ -4,26 +4,41 @@ import { categorizeBill } from "@/lib/keywords";
 import { sendDigestEmail } from "@/lib/emailService";
 import { fetchRadaDataset } from "@/lib/radaApiService";
 
+// It's good practice to initialize Redis only once.
 const redis = Redis.fromEnv();
 const SEEN_BILLS_CACHE_KEY = "rada_seen_bills_ids";
 
 export async function GET(request: Request) {
-  const authToken = (request.headers.get("authorization") || "").split(
-    "Bearer "
-  )[1];
+  console.log("CRON JOB TRIGGERED");
+  const authToken = (request.headers.get("authorization") || "").split("Bearer ")[1];
+  
   if (authToken !== process.env.CRON_SECRET) {
+    console.error("Unauthorized access attempt.");
     return new Response("Unauthorized", { status: 401 });
   }
 
   try {
-    console.log("Starting daily digest cron job...");
+    // STEP 1: Fetch external and cached data
+    console.log("Fetching all bills from API...");
     const allBills = await fetchRadaDataset();
-    const seenBillIds = await redis.smembers(SEEN_BILLS_CACHE_KEY);
-    const seenBillIdsSet = new Set(seenBillIds);
-    console.log(`Retrieved ${seenBillIdsSet.size} seen bill IDs from cache.`);
+    console.log(`Fetched a total of ${allBills.length} bills.`);
 
+    console.log(`Attempting to fetch seen bill IDs from Redis cache with key: ${SEEN_BILLS_CACHE_KEY}`);
+    const seenBillIds: string[] = await redis.smembers(SEEN_BILLS_CACHE_KEY);
+    
+    // --- CRITICAL DIAGNOSTIC LOG ---
+    console.log(`Retrieved ${seenBillIds.length} seen bill IDs from Redis.`);
+    if (seenBillIds.length > 0) {
+        // Log the first few IDs to confirm we are getting real data
+        console.log(`Sample of seen IDs from cache: [${seenBillIds.slice(0, 3).join(", ")}]`);
+    }
+    // --- END DIAGNOSTIC ---
+
+    const seenBillIdsSet = new Set(seenBillIds);
+
+    // STEP 2: Process data to find what's new
     const newRelevantBills = [];
-    const newlyFoundBillIds: string[] = [];
+    const newlyFoundBillIds: string[] = []; 
 
     for (const bill of allBills) {
       const billIdStr = bill.id.toString();
@@ -42,34 +57,41 @@ export async function GET(request: Request) {
       }
     }
 
+    // STEP 3: Act on the new data
     if (newRelevantBills.length > 0) {
-      console.log(`Found ${newRelevantBills.length} new relevant bills.`);
-
+      console.log(`Found ${newRelevantBills.length} new relevant bills to process.`);
+      
+      // Update cache BEFORE sending the email to prevent double-sends
       if (newlyFoundBillIds.length > 0) {
-        console.log(
-          `Adding ${newlyFoundBillIds.length} new bill IDs to the 'seen' cache...`
-        );
-
-        await redis.sadd(SEEN_BILLS_CACHE_KEY, newlyFoundBillIds);
-        console.log("Successfully added new bill IDs to the cache.");
+        console.log(`Attempting to add ${newlyFoundBillIds.length} new bill IDs to Redis cache...`);
+        
+        // --- CRITICAL DIAGNOSTIC ---
+        // Capture the result of the SADD command. It returns the number of elements actually added.
+        const addResult = await redis.sadd(SEEN_BILLS_CACHE_KEY, newlyFoundBillIds);
+        console.log(`Redis 'sadd' command finished. Number of new elements added to the set: ${addResult}.`);
+        if (addResult !== newlyFoundBillIds.length) {
+            console.warn("Warning: The number of IDs added to Redis does not match the number of new bills found. This could indicate some IDs already existed in the set unexpectedly.");
+        }
+        // --- END DIAGNOSTIC ---
       }
 
       console.log("Sending digest email...");
       await sendDigestEmail(newRelevantBills);
       console.log("Email sent successfully.");
+
     } else {
-      console.log("No new relevant bills found.");
+      console.log("No new relevant bills found. Nothing to do.");
     }
 
+    console.log("CRON JOB COMPLETED SUCCESSFULLY");
     return NextResponse.json({
       success: true,
       foundBills: newRelevantBills.length,
     });
+
   } catch (error) {
-    console.error("[CRON JOB FAILED]", error);
-    return NextResponse.json(
-      { success: false, error: (error as Error).message },
-      { status: 500 }
-    );
+    console.error('[CRON JOB FAILED]', error);
+    // Log the full error object for more details
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }
