@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const seenBillIdsSet = new Set(seenBillIds);
 
     const newRelevantBills = [];
-    const newlyFoundBillIds: string[] = []; 
+    const newlyFoundBillIds: string[] = [];
 
     for (const bill of allBills) {
       const billIdStr = bill.id.toString();
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       console.log("Email sent successfully.");
 
       if (newlyFoundBillIds.length > 0) {
-        await redis.sadd(SEEN_BILLS_CACHE_KEY, newlyFoundBillIds);
+        await redis.sadd(SEEN_BILLS_CACHE_KEY, [...newlyFoundBillIds]);
         console.log(
           `Added ${newlyFoundBillIds.length} new bill IDs to the seen cache.`
         );
@@ -62,9 +62,11 @@ export async function GET(request: Request) {
       success: true,
       foundBills: newRelevantBills.length,
     });
-
   } catch (error) {
-    console.error('[CRON JOB FAILED]', error);
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    console.error("[CRON JOB FAILED]", error);
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
