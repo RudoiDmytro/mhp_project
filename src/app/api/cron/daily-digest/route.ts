@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     const allBills = await fetchRadaDataset();
     const seenBillIds = await redis.smembers(SEEN_BILLS_CACHE_KEY);
     const seenBillIdsSet = new Set(seenBillIds);
+    console.log(`Retrieved ${seenBillIdsSet.size} seen bill IDs from cache.`);
 
     const newRelevantBills = [];
     const newlyFoundBillIds: string[] = [];
@@ -42,18 +43,20 @@ export async function GET(request: Request) {
     }
 
     if (newRelevantBills.length > 0) {
-      console.log(
-        `Found ${newRelevantBills.length} new relevant bills. Sending email...`
-      );
-      await sendDigestEmail(newRelevantBills);
-      console.log("Email sent successfully.");
+      console.log(`Found ${newRelevantBills.length} new relevant bills.`);
 
       if (newlyFoundBillIds.length > 0) {
-        await redis.sadd(SEEN_BILLS_CACHE_KEY, [...newlyFoundBillIds]);
         console.log(
-          `Added ${newlyFoundBillIds.length} new bill IDs to the seen cache.`
+          `Adding ${newlyFoundBillIds.length} new bill IDs to the 'seen' cache...`
         );
+
+        await redis.sadd(SEEN_BILLS_CACHE_KEY, newlyFoundBillIds);
+        console.log("Successfully added new bill IDs to the cache.");
       }
+
+      console.log("Sending digest email...");
+      await sendDigestEmail(newRelevantBills);
+      console.log("Email sent successfully.");
     } else {
       console.log("No new relevant bills found.");
     }
