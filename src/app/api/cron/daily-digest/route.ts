@@ -52,7 +52,6 @@ export async function GET(request: Request) {
       console.log(`Found ${newRelevantBills.length} new relevant bills.`);
 
       if (newlyFoundBillIds.length > 0) {
-        // Adding the generic <number> helps TypeScript understand the expected return type.
         const addResult = await redis.sadd(
           SEEN_BILLS_CACHE_KEY,
           newlyFoundBillIds
